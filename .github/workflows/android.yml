@@ -1,59 +1,11 @@
-
-name: Build Gerer Ville APK
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
-
-    steps:
-      - name: Get project
-        uses: actions/checkout@v4
-
-      - name: Extract project ZIP
-        run: |
-          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" -print -quit)
-          if [ -z "$ZIP_FILE" ]; then
-            echo "Project ZIP not found"
-            exit 1
-          fi
-          mkdir project
-          unzip -q "$ZIP_FILE" -d project
-          test -f project/settings.gradle
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Accept Android licenses
-        run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
-
-      - name: Build APK
-        working-directory: project
-        run: gradle assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Gerer-Ville-APK
-          path: project/app/build/outputs/apk/debug/app-debug.apk
+- name: Find ZIP file
+  run: |
+    ZIP_FILE=$(find . -maxdepth 1 -type f -iname "*.zip" -print -quit)
+    if [ -z "$ZIP_FILE" ]; then
+      echo "ERROR: No ZIP file found in repository root."
+      echo "Files in root:"
+      ls -la
+      exit 1
+    fi
+    echo "Found ZIP: $ZIP_FILE"
+    echo "ZIP_FILE=$ZIP_FILE" >> "$GITHUB_ENV"
